@@ -8,6 +8,7 @@ import { CaseStudies } from "@/components/sections/CaseStudies";
 import { Skills } from "@/components/sections/Skills";
 import { Contact } from "@/components/sections/Contact";
 import { Footer } from "@/components/Footer";
+import { Chatbot } from "@/components/Chatbot";
 export default function Home() {
   return (
     <>
@@ -21,6 +22,7 @@ export default function Home() {
         <Contact />
       </main>
       <Footer />
+      <Chatbot />
     </>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ExternalLink, ChevronRight, Layers, Server } from "lucide-react";
+import { ExternalLink, ChevronRight, Layers, Server, GraduationCap } from "lucide-react";
 import { SectionReveal } from "@/components/ui/SectionReveal";
 import { TechIcon } from "@/components/ui/TechIcon";
 import { cn } from "@/lib/utils";
@@ -81,6 +81,37 @@ const CASE_STUDIES = [
     accentColor: "text-emerald-400",
     borderAccent: "group-hover:border-emerald-500/30",
     icon: Server,
+  },
+  {
+    id: "institute",
+    num: "03",
+    tag: "Full-Stack",
+    subtitle: "MERN",
+    title: "Institute Management System",
+    headline: "Full-Stack Web Platform",
+    oneLiner:
+      "A complete management system for a computer-courses academy — admin operations, online enrollment, and an AI guide for prospective students, in one platform.",
+    sections: [
+      {
+        label: "Problem",
+        text: "A growing training academy was running on manual processes — course records, student registrations, and fee receipts handled by hand, and no real way for prospective students to discover courses or enroll without showing up in person. They needed one system to run operations internally and bring enrollment online.",
+      },
+      {
+        label: "Solution",
+        text: "A full-stack platform with two sides. For the academy: an admin dashboard to manage courses, students, and the full fee-and-receipt cycle in one place. For prospective students: a public site with online course registration, an events section showcasing the academy's activities through photo galleries, and a chatbot that guides visitors through the courses on offer — and recommends the right course based on a student's current skill level. Fully responsive across devices.",
+      },
+      {
+        label: "Hard Part",
+        text: "Designing one system that served two very different users — staff who needed control and clarity over day-to-day operations, and first-time visitors who needed to be guided, not overwhelmed. The skill-based course-recommendation chatbot was the piece that turned a brochure-style site into something that actually helped people choose.",
+      },
+    ],
+    stack: ["React", "Bootstrap", "Node.js", "Express", "MongoDB"],
+    gradient: "from-emerald-500/10 via-cyan-500/5 to-transparent",
+    aurora:
+      "[--aurora:repeating-linear-gradient(100deg,var(--emerald-500)_10%,var(--cyan-300)_15%,var(--emerald-300)_20%,var(--emerald-400)_25%,var(--cyan-300)_30%)]",
+    accentColor: "text-emerald-400",
+    borderAccent: "group-hover:border-emerald-500/30",
+    icon: GraduationCap,
   },
 ];
 
@@ -277,7 +308,16 @@ function ProjectCard({
 }
 
 export function CaseStudies() {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const toggleCard = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <section id="case-studies" className="py-20 px-6">
@@ -303,10 +343,8 @@ export function CaseStudies() {
             <ProjectCard
               key={study.id}
               study={study}
-              isExpanded={expandedId === study.id}
-              onToggle={() =>
-                setExpandedId(expandedId === study.id ? null : study.id)
-              }
+              isExpanded={expandedIds.has(study.id)}
+              onToggle={() => toggleCard(study.id)}
             />
           ))}
         </div>

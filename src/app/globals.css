@@ -122,6 +122,28 @@ body {
   background: var(--accent);
 }
 
+.chatbot-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+
+.chatbot-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.chatbot-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chatbot-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+.chatbot-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

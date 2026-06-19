@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Mail, Send, ArrowUpRight, Copy, Check } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Send, ArrowUpRight, Copy, Check, CheckCircle2, XCircle, X } from "lucide-react";
 import { SectionReveal } from "@/components/ui/SectionReveal";
 import { cn } from "@/lib/utils";
 
@@ -43,96 +43,279 @@ const SOCIALS = [
   },
 ];
 
+type Toast = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
+function Snackbar({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [toast, onClose]);
+
+  return (
+    <AnimatePresence>
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -60, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="fixed top-5 left-4 right-4 sm:left-auto sm:right-8 sm:top-20 z-50 sm:max-w-sm sm:w-full pointer-events-auto"
+        >
+          <div
+            className={cn(
+              "flex items-start gap-3 px-5 pt-4 pb-3 rounded-2xl border shadow-2xl backdrop-blur-xl overflow-hidden",
+              toast.type === "success"
+                ? "bg-emerald-950/80 border-emerald-500/30 shadow-emerald-500/10"
+                : "bg-red-950/80 border-red-500/30 shadow-red-500/10"
+            )}
+          >
+            <div className="shrink-0 mt-0.5">
+              {toast.type === "success" ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-400" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={cn(
+                "text-sm font-semibold",
+                toast.type === "success" ? "text-emerald-200" : "text-red-200"
+              )}>
+                {toast.type === "success" ? "Message Sent" : "Failed to Send"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">{toast.message}</p>
+              <motion.div
+                initial={{ scaleX: 1 }}
+                animate={{ scaleX: 0 }}
+                transition={{ duration: 5, ease: "linear" }}
+                className={cn(
+                  "h-0.5 rounded-full mt-3 origin-left",
+                  toast.type === "success" ? "bg-emerald-500/50" : "bg-red-500/50"
+                )}
+              />
+            </div>
+            <button
+              onClick={onClose}
+              className="shrink-0 p-1 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type FieldErrors = { name?: string; email?: string; message?: string };
+
+function validate(form: { name: string; email: string; message: string }): FieldErrors {
+  const errors: FieldErrors = {};
+  if (!form.name.trim()) errors.name = "Name is required.";
+  if (!form.email.trim()) errors.email = "Email is required.";
+  else if (!EMAIL_REGEX.test(form.email)) errors.email = "Please enter a valid email address.";
+  if (!form.message.trim()) errors.message = "Message is required.";
+  return errors;
+}
+
 function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
   const [focused, setFocused] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "sending">("idle");
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [toast, setToast] = useState<Toast>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const dismissToast = useCallback(() => setToast(null), []);
+
+  const handleChange = (field: string, value: string) => {
+    const next = { ...form, [field]: value };
+    setForm(next);
+    if (touched[field] || errors[field as keyof FieldErrors]) {
+      const updated = validate(next);
+      setErrors((prev) => ({ ...prev, [field]: updated[field as keyof FieldErrors] }));
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    setFocused(null);
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    const updated = validate(form);
+    setErrors((prev) => ({ ...prev, [field]: updated[field as keyof FieldErrors] }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Portfolio Contact from ${form.name}`);
-    const body = encodeURIComponent(
-      `Name: ${form.name}\nEmail: ${form.email}\n\n${form.message}`
-    );
-    window.location.href = `mailto:yasir.mahmood.3795@gmail.com?subject=${subject}&body=${body}`;
+
+    const validationErrors = validate(form);
+    setErrors(validationErrors);
+    setTouched({ name: true, email: true, message: true });
+
+    if (Object.keys(validationErrors).length > 0) return;
+
+    setStatus("sending");
+
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Something went wrong.");
+      }
+
+      setToast({ type: "success", message: "Thanks for reaching out! I'll get back to you soon." });
+      setForm({ name: "", email: "", message: "" });
+      setTouched({});
+      setErrors({});
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setToast({ type: "error", message });
+    } finally {
+      setStatus("idle");
+    }
   };
 
   const inputClass = (field: string) =>
     cn(
       "w-full px-4 py-3 rounded-xl bg-glass border text-foreground text-sm outline-none transition-all duration-300 placeholder:text-muted/50",
-      focused === field
-        ? "border-accent/50 shadow-[0_0_20px_rgba(34,197,94,0.1)]"
-        : "border-border hover:border-muted/40"
+      errors[field as keyof FieldErrors]
+        ? "border-red-500/60 shadow-[0_0_15px_rgba(239,68,68,0.08)]"
+        : focused === field
+          ? "border-accent/50 shadow-[0_0_20px_rgba(34,197,94,0.1)]"
+          : "border-border hover:border-muted/40"
     );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label
-          htmlFor="name"
-          className="block text-xs font-mono font-semibold text-muted uppercase tracking-wider mb-2"
+    <>
+      <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-xs font-mono font-semibold text-muted uppercase tracking-wider mb-2"
+          >
+            Name
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={form.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            onFocus={() => setFocused("name")}
+            onBlur={() => handleBlur("name")}
+            className={inputClass("name")}
+            placeholder="Your name"
+          />
+          <AnimatePresence>
+            {errors.name && (
+              <motion.p
+                initial={{ opacity: 0, y: -4, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -4, height: 0 }}
+                className="text-red-400 text-xs mt-1.5 font-medium"
+              >
+                {errors.name}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-xs font-mono font-semibold text-muted uppercase tracking-wider mb-2"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={form.email}
+            onChange={(e) => handleChange("email", e.target.value)}
+            onFocus={() => setFocused("email")}
+            onBlur={() => handleBlur("email")}
+            className={inputClass("email")}
+            placeholder="you@example.com"
+          />
+          <AnimatePresence>
+            {errors.email && (
+              <motion.p
+                initial={{ opacity: 0, y: -4, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -4, height: 0 }}
+                className="text-red-400 text-xs mt-1.5 font-medium"
+              >
+                {errors.email}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+        <div>
+          <label
+            htmlFor="message"
+            className="block text-xs font-mono font-semibold text-muted uppercase tracking-wider mb-2"
+          >
+            Message
+          </label>
+          <textarea
+            id="message"
+            rows={5}
+            value={form.message}
+            onChange={(e) => handleChange("message", e.target.value)}
+            onFocus={() => setFocused("message")}
+            onBlur={() => handleBlur("message")}
+            className={inputClass("message") + " resize-none"}
+            placeholder="Tell me about your project..."
+          />
+          <AnimatePresence>
+            {errors.message && (
+              <motion.p
+                initial={{ opacity: 0, y: -4, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: "auto" }}
+                exit={{ opacity: 0, y: -4, height: 0 }}
+                className="text-red-400 text-xs mt-1.5 font-medium"
+              >
+                {errors.message}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+        <motion.button
+          type="submit"
+          disabled={status === "sending"}
+          whileHover={{ scale: status === "sending" ? 1 : 1.02 }}
+          whileTap={{ scale: status === "sending" ? 1 : 0.98 }}
+          className={cn(
+            "group w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-accent text-white font-semibold text-sm cursor-pointer transition-all duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]",
+            status === "sending" && "opacity-70 cursor-not-allowed"
+          )}
         >
-          Name
-        </label>
-        <input
-          id="name"
-          type="text"
-          required
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          onFocus={() => setFocused("name")}
-          onBlur={() => setFocused(null)}
-          className={inputClass("name")}
-          placeholder="Your name"
-        />
-      </div>
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-xs font-mono font-semibold text-muted uppercase tracking-wider mb-2"
-        >
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          onFocus={() => setFocused("email")}
-          onBlur={() => setFocused(null)}
-          className={inputClass("email")}
-          placeholder="you@example.com"
-        />
-      </div>
-      <div>
-        <label
-          htmlFor="message"
-          className="block text-xs font-mono font-semibold text-muted uppercase tracking-wider mb-2"
-        >
-          Message
-        </label>
-        <textarea
-          id="message"
-          required
-          rows={5}
-          value={form.message}
-          onChange={(e) => setForm({ ...form, message: e.target.value })}
-          onFocus={() => setFocused("message")}
-          onBlur={() => setFocused(null)}
-          className={inputClass("message") + " resize-none"}
-          placeholder="Tell me about your project..."
-        />
-      </div>
-      <motion.button
-        type="submit"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="group w-full flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl bg-accent text-white font-semibold text-sm cursor-pointer transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(34,197,94,0.3)]"
-      >
-        Send Message
-        <Send className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-      </motion.button>
-    </form>
+          {status === "sending" ? (
+            <>
+              <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Sending...
+            </>
+          ) : (
+            <>
+              Send Message
+              <Send className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </>
+          )}
+        </motion.button>
+      </form>
+      <Snackbar toast={toast} onClose={dismissToast} />
+    </>
   );
 }
 

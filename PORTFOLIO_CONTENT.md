@@ -30,6 +30,12 @@ What I Built: A role-based platform serving 150+ users across four roles — emp
 The Hard Part: The multi-role permission system and approval-routing logic — the part that's easy to get subtly wrong and frustrating for users when you do. Built the backend in Django and a clean, responsive interface in Next.js.
 Stack: Django · Next.js · TypeScript · Material UI
 [Screenshots: approval flow + admin inventory dashboard] · [GitHub link]
+Institute Management System — Full-Stack Web Platform · MERN
+One-liner: A complete management system for a computer-courses academy — admin operations, online enrollment, and an AI guide for prospective students, in one platform.
+The Problem: A growing training academy was running on manual processes — course records, student registrations, and fee receipts handled by hand, and no real way for prospective students to discover courses or enroll without showing up in person. They needed one system to run operations internally and bring enrollment online.
+What I Built: A full-stack platform with two sides. For the academy: an admin dashboard to manage courses, students, and the full fee-and-receipt cycle in one place. For prospective students: a public site with online course registration, an events section showcasing the academy's activities through photo galleries, and a chatbot that guides visitors through the courses on offer — and recommends the right course based on a student's current skill level. Fully responsive across devices.
+The Hard Part: Designing one system that served two very different users — staff who needed control and clarity over day-to-day operations, and first-time visitors who needed to be guided, not overwhelmed. The skill-based course-recommendation chatbot was the piece that turned a brochure-style site into something that actually helped people choose.
+Stack: React · Bootstrap · Node.js · Express · MongoDB
 5. SKILLS & TECHNOLOGIES
 Frontend: Next.js · React.js · TypeScript · JavaScript · Material UI · Redux Toolkit · RTK Query
 Cloud & Backend: AWS Lambda · API Gateway (REST & WebSockets) · S3 · Step Functions · DynamoDB · EventBridge · AWS Amplify · Serverless Architecture · Django · Python

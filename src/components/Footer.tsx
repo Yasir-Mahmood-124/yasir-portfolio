@@ -49,7 +49,7 @@ export function Footer() {
             <img
               src="/logo.png"
               alt="Yasir Mahmood"
-              className="h-24 w-auto -ml-5"
+              className="h-36 w-auto -ml-7"
             />
           </a>
 
