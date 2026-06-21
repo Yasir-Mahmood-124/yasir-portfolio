@@ -60,6 +60,32 @@ function ThemeExpandable() {
   );
 }
 
+function MobileThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <div className="w-9 h-9" />;
+
+  const cycle = () => {
+    if (theme === "light") setTheme("dark");
+    else if (theme === "dark") setTheme("system");
+    else setTheme("light");
+  };
+
+  const Icon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
+
+  return (
+    <button
+      onClick={cycle}
+      className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center text-accent cursor-pointer transition-colors duration-200 hover:bg-accent/20 shrink-0"
+      aria-label={`Current theme: ${theme}. Click to cycle.`}
+    >
+      <Icon className="w-4 h-4" />
+    </button>
+  );
+}
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -106,16 +132,16 @@ export function Navbar() {
           : "bg-transparent"
       }`}
     >
-      <nav className="max-w-6xl mx-auto px-6 py-2 flex items-center justify-between">
+      <nav className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between">
         <a
           href="#"
           onClick={() => setActiveTab("")}
-          className="cursor-pointer block"
+          className="cursor-pointer block shrink-0"
         >
           <img
             src="/logo.png"
             alt="Yasir Mahmood"
-            className="h-44 w-auto -my-[4.5rem] -ml-12"
+            className="h-28 sm:h-44 w-auto -my-8 sm:-my-[4.5rem] -ml-6 sm:-ml-12"
           />
         </a>
 
@@ -162,11 +188,11 @@ export function Navbar() {
           <ThemeExpandable />
         </div>
 
-        <div className="flex md:hidden items-center gap-3">
-          <ThemeExpandable />
+        <div className="flex md:hidden items-center gap-2">
+          <MobileThemeToggle />
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="w-9 h-9 flex items-center justify-center cursor-pointer"
+            className="w-9 h-9 flex items-center justify-center cursor-pointer shrink-0"
             aria-label="Toggle menu"
           >
             {mobileOpen ? (
